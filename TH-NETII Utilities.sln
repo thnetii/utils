@@ -17,15 +17,20 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{EAE54137-0792-4127-A724-158AF420183A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "THNETII.Utils.GhMultiSync", "src\THNETII.Utils.GhMultiSync\THNETII.Utils.GhMultiSync.csproj", "{3B7BE00C-DB30-4403-919C-1E6DD060F8D2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "THNETII.Utils.GhMultiSync", "src\THNETII.Utils.GhMultiSync\THNETII.Utils.GhMultiSync.csproj", "{3B7BE00C-DB30-4403-919C-1E6DD060F8D2}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "command-line-api", "command-line-api", "{84CFBCFF-7049-41DF-94C9-2B5305352BBB}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{82A6F612-E647-4795-B008-2EF5DCE1E9DD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.CommandLine", "command-line-api\src\System.CommandLine\System.CommandLine.csproj", "{D5253D49-837A-4A82-8E5C-1BA3F08CB585}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.CommandLine", "command-line-api\src\System.CommandLine\System.CommandLine.csproj", "{D5253D49-837A-4A82-8E5C-1BA3F08CB585}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.CommandLine.Hosting", "command-line-api\src\System.CommandLine.Hosting\System.CommandLine.Hosting.csproj", "{5C7ADE1B-5E43-4A74-8D02-51C75DE3E1D8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.CommandLine.Hosting", "command-line-api\src\System.CommandLine.Hosting\System.CommandLine.Hosting.csproj", "{5C7ADE1B-5E43-4A74-8D02-51C75DE3E1D8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "templates", "templates", "{2A36BA5C-DF59-483A-BC62-05F2387AE10B}"
+	ProjectSection(SolutionItems) = preProject
+		templates\thnetii.multi-sync.yml = templates\thnetii.multi-sync.yml
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -35,12 +40,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {99D559D3-E3D7-48A6-9DC6-789D741FA813}
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{3B7BE00C-DB30-4403-919C-1E6DD060F8D2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -80,10 +79,16 @@ Global
 		{5C7ADE1B-5E43-4A74-8D02-51C75DE3E1D8}.Release|x86.ActiveCfg = Release|Any CPU
 		{5C7ADE1B-5E43-4A74-8D02-51C75DE3E1D8}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{3B7BE00C-DB30-4403-919C-1E6DD060F8D2} = {EAE54137-0792-4127-A724-158AF420183A}
 		{82A6F612-E647-4795-B008-2EF5DCE1E9DD} = {84CFBCFF-7049-41DF-94C9-2B5305352BBB}
 		{D5253D49-837A-4A82-8E5C-1BA3F08CB585} = {82A6F612-E647-4795-B008-2EF5DCE1E9DD}
 		{5C7ADE1B-5E43-4A74-8D02-51C75DE3E1D8} = {82A6F612-E647-4795-B008-2EF5DCE1E9DD}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {99D559D3-E3D7-48A6-9DC6-789D741FA813}
 	EndGlobalSection
 EndGlobal

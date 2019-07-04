@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "THNETII.Utils.GhMultiSync": {
+      "commandName": "Project",
+      "commandLineArgs": "[config:Environment=Development] [config:Logging:LogLevel:THNETII=Trace] ../../../templates/thnetii.multi-sync.yml"
+    }
+  }
+}

@@ -1,0 +1,51 @@
+groups:
+  default:
+    repositories:
+    - repoOwner:  couven92
+      repoName:   configuration
+      copyFiles:
+      - sourcePaths:
+        - EditorConfig/.editorconfig
+        - GitFiles/.gitattributes
+        destinationPath: ./
+      emptyFiles:
+      - destinationPath: .gitmodules
+        condition:
+          not: destinationExists
+  dotnet-repo:
+    inherits:
+    - default
+    repositories:
+    - repoOwner:  couven92
+      repoName:   configuration
+      copyFiles:
+      - sourcePaths:
+        - Dependabot
+        sourceType:       directChildren
+        destinationPath:  .dependabot/
+      - sourcePaths:
+        - DotNet-Solution-Directory/AllRules.ruleset
+        - DotNet-Solution-Directory/Directory.Build.props
+        destinationPath:  ./
+      - sourcePaths:
+        - DotNet-Solution-Directory/Directory.Meta.props
+        destinationPath:  ./
+        condition:
+          not: destinationExists
+    - repoOwner:  thnetii
+      repoName:   azure-pipelines
+      copyFiles:
+      - sourcePaths:
+        - .azure-pipelines
+        destinationPath:  ./
+    - repoOwner:  github
+      repoName:   gitignore
+      copyFiles:
+      - sourcePaths:
+        - VisualStudio.gitignore
+        destinationPath:  .gitignore
+targets:
+- repoOwner:    thnetii
+  repoName:     dotnet-common
+  groups:
+  - dotnet-repo

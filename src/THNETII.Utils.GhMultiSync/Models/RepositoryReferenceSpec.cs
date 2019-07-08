@@ -9,5 +9,8 @@ namespace THNETII.Utils.GhMultiSync.Models
 
         [YamlMember(Alias = "repoName")]
         public string RepositoryName { get; set; }
+
+        [YamlMember(Alias = "treeRef")]
+        public string TreeReference { get; set; }
     }
 }

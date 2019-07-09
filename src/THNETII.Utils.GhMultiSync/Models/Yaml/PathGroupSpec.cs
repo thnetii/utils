@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using YamlDotNet.Serialization;
 
-namespace THNETII.Utils.GhMultiSync.Models
+namespace THNETII.Utils.GhMultiSync.Models.Yaml
 {
     public class PathGroupSpec
     {

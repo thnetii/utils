@@ -1,16 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 
+using THNETII.Utils.GhMultiSync.Models.Yaml;
+
 namespace THNETII.Utils.GhMultiSync.Models
 {
-    public class RepositoryReferenceComparer : IEqualityComparer<RepositoryReferenceSpec>
+    public class RepositoryReferenceComparer : IEqualityComparer<RepositoryReference>
     {
         public static RepositoryReferenceComparer Instance { get; } =
             new RepositoryReferenceComparer();
 
         private RepositoryReferenceComparer() { }
 
-        public bool Equals(RepositoryReferenceSpec x, RepositoryReferenceSpec y)
+        public bool Equals(RepositoryReference x, RepositoryReference y)
         {
             return ReferenceEquals(x, y) ||
                 (
@@ -19,7 +21,7 @@ namespace THNETII.Utils.GhMultiSync.Models
                 );
         }
 
-        public int GetHashCode(RepositoryReferenceSpec obj)
+        public int GetHashCode(RepositoryReference obj)
             => obj?.RepositoryName?.GetHashCode(StringComparison.OrdinalIgnoreCase) ?? 0;
     }
 }

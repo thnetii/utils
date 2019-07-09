@@ -4,13 +4,16 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 using Octokit;
 
 using THNETII.Utils.GhMultiSync.Models;
+using THNETII.Utils.GhMultiSync.Models.Yaml;
 
 using YamlDotNet.Serialization;
 
@@ -23,6 +26,7 @@ namespace THNETII.Utils.GhMultiSync
         public CommandExecutor(
             CommandArguments arguments,
             GitHubClient gitHubClient,
+            IOptions<MemoryCacheOptions> memoryCacheOptions,
             IConfiguration configuration,
             ILogger<CommandExecutor> logger = null)
         {
@@ -34,6 +38,8 @@ namespace THNETII.Utils.GhMultiSync
             Deserializer = new DeserializerBuilder()
                 .IgnoreUnmatchedProperties()
                 .Build();
+
+            RepositoryCache = new MemoryCache(memoryCacheOptions);
         }
 
         public CommandArguments Arguments { get; }
@@ -42,8 +48,9 @@ namespace THNETII.Utils.GhMultiSync
         public ILogger<CommandExecutor> Logger { get; }
         public IDeserializer Deserializer { get; }
 
-        public Dictionary<RepositoryReferenceSpec, RepositoryCache> RepositoryCache { get; } =
-            new Dictionary<RepositoryReferenceSpec, RepositoryCache>(RepositoryReferenceComparer.Instance);
+        public MemoryCache RepositoryCache { get; }
+        public Dictionary<RepositoryReference, RepositoryContentChangeTracker> RepositoryChangeTracker { get; } =
+            new Dictionary<RepositoryReference, RepositoryContentChangeTracker>(RepositoryReferenceComparer.Instance);
 
         public async Task ExecuteAsync(CancellationToken cancelToken)
         {
@@ -57,9 +64,6 @@ namespace THNETII.Utils.GhMultiSync
 
                 foreach (var targetSpec in specModel.Targets ?? Enumerable.Empty<TargetSpec>())
                 {
-                    await ExecuteTargetSpec(targetSpec, specModel)
-                        .ConfigureAwait(false);
-
                     cancelToken.ThrowIfCancellationRequested();
                 }
 
@@ -67,169 +71,134 @@ namespace THNETII.Utils.GhMultiSync
             }
         }
 
-        private Task ExecuteTargetSpec(TargetSpec targetSpec, MultiSyncSpec syncSpec)
+        private Task ExecuteCopyFilePath(string sourcePath,
+            PathGroupSpec copySpec, RepositoryReference sourceRepo,
+            RepositoryReference targetRepo, CancellationToken cancelToken)
+            => ExecuteCopyFilePath(sourcePath, sourcePath, copySpec, sourceRepo, targetRepo, cancelToken);
+
+        private async Task ExecuteCopyFilePath(string sourcePath, string sourceContentPath,
+            PathGroupSpec copySpec, RepositoryReference sourceRepo,
+            RepositoryReference targetRepo, CancellationToken cancelToken)
         {
-            return Task.WhenAll((targetSpec.Groups ?? Enumerable.Empty<string>())
-                .Select(groupName => ExecuteTargetGroupName(groupName, targetSpec, syncSpec))
-                );
-        }
-
-        private Task ExecuteTargetGroupName(string groupName, TargetSpec targetSpec, MultiSyncSpec syncSpec)
-        {
-            if (!syncSpec.Groups.TryGetValue(groupName, out var groupSpec))
-            {
-                Logger.LogError($"Unknown group name specified: {{{nameof(groupName)}}}", groupName);
-                return Task.CompletedTask;
-            }
-
-            return ExecuteTargetGroupSpec(groupSpec, targetSpec, syncSpec);
-        }
-
-        private async Task ExecuteTargetGroupSpec(SourceGroupSpec groupSpec, TargetSpec targetSpec, MultiSyncSpec syncSpec)
-        {
-            await Task.WhenAll((groupSpec.Inherits ?? Enumerable.Empty<string>())
-                .Select(groupName => ExecuteTargetGroupName(groupName, targetSpec, syncSpec))
-                ).ConfigureAwait(false);
-
-            await Task.WhenAll((groupSpec.Repositories ?? Enumerable.Empty<SourceRepositorySpec>())
-                .Select(sourceRepository => ExecuteTargetSpecSourceRepository(sourceRepository, targetSpec))
-                ).ConfigureAwait(false);
-        }
-
-        private Task ExecuteTargetSpecSourceRepository(SourceRepositorySpec sourceSpec, TargetSpec targetSpec)
-        {
-            var sourceCache = GetOrCreateRepositoryCache(sourceSpec);
-            var targetCache = GetOrCreateRepositoryCache(targetSpec);
-
-            return Task.WhenAll(
-                (sourceSpec.CopyFiles ?? Enumerable.Empty<PathGroupSpec>())
-                .Select(fileSpec =>
-                {
-                    return ExecuteTargetCopyFilesSpec(
-                        fileSpec,
-                        sourceCache,
-                        targetCache,
-                        sourceSpec,
-                        targetSpec
-                        );
-                }));
-        }
-
-        private Task ExecuteTargetCopyFilesSpec(PathGroupSpec fileSpec, RepositoryCache sourceCache, RepositoryCache targetCache, RepositoryReferenceSpec sourceSpec, RepositoryReferenceSpec targetSpec)
-        {
-            return Task.WhenAll(
-                (fileSpec.SourcePaths ?? Enumerable.Empty<string>())
-                .Select(path =>
-                {
-                    return ExecuteTargetCopyFilePath(
-                        path,
-                        fileSpec,
-                        sourceCache,
-                        targetCache,
-                        sourceSpec,
-                        targetSpec
-                        );
-                }));
-        }
-
-        private async Task ExecuteTargetCopyFilePath(string sourcePath, PathGroupSpec fileSpec, RepositoryCache sourceCache, RepositoryCache targetCache, RepositoryReferenceSpec sourceSpec, RepositoryReferenceSpec targetSpec)
-        {
-            RepositoryCacheEntry sourceEntry;
+            RepositoryContentEntry sourceContentEntry;
             try
             {
-                sourceEntry = await GetOrCreateRepositoryCacheEntry(sourceCache, sourcePath, sourceSpec)
-                    .ConfigureAwait(false);
+                sourceContentEntry = await GetRepositoryContentEntry(sourceRepo, sourceContentPath)
+                    .ConfigureAwait(continueOnCapturedContext: false);
             }
             catch (NotFoundException notFoundExcept)
             {
-                Logger.LogError(notFoundExcept, $"Unable to copy file from source path: {{{nameof(sourcePath)}}}", sourcePath);
+                Logger.LogError(notFoundExcept, $"Unable to get repository contents from {{{nameof(sourceRepo)}}} at path: {{{nameof(sourcePath)}}}", sourceRepo.ToLogString(), sourceContentPath);
                 return;
             }
-
-            if (fileSpec.Condition is ConditionSpec)
+            if (cancelToken.IsCancellationRequested)
+                return;
+            var sourceContents = sourceContentEntry.Contents;
+            foreach (var sourceContent in sourceContents)
             {
-                // Return if condition evaluation returns false
-            }
-
-
-        }
-
-        private RepositoryCache GetOrCreateRepositoryCache(RepositoryReferenceSpec repoSpec)
-        {
-            bool repoFound;
-            RepositoryCache repoCache;
-            lock (RepositoryCache)
-            { repoFound = RepositoryCache.TryGetValue(repoSpec, out repoCache); }
-            if (!repoFound)
-            {
-                repoCache = new RepositoryCache();
-                lock (RepositoryCache)
-                { RepositoryCache[repoSpec] = repoCache; }
-            }
-            return repoCache;
-        }
-
-        private async Task<RepositoryCacheEntry> GetOrCreateRepositoryCacheEntry(RepositoryCache repoCache, string path, RepositoryReferenceSpec repoSpec)
-        {
-            bool entryFound;
-            RepositoryCacheEntry entryObj;
-            var entries = repoCache.Entries;
-            lock (entries)
-            { entryFound = entries.TryGetValue(path, out entryObj); }
-            if (!entryFound)
-                entryObj = new RepositoryCacheEntry();
-            switch (entryObj)
-            {
-                case RepositoryCacheEntry _
-                when entryObj.Leaf is null
-                    && entryObj.Contents is null:
-                case RepositoryCacheEntry _
-                when entryObj.Leaf is RepositoryContent entryLeaf
-                    && entryLeaf.Type.TryParse(out var entryType)
-                    && entryType == ContentType.Dir
-                    && entryObj.Contents is null:
-                    await GetRepositoryContentsForEntry(path, entryObj, repoSpec, entries)
-                        .ConfigureAwait(false);
-                    break;
-            }
-
-            lock (entries)
-            {
-                if (entries.TryGetValue(path, out var newEntryObj))
+                bool unsupportedContentType = !sourceContent.Type.TryParse(out var sourceContentType);
+                if (!unsupportedContentType)
                 {
-                    newEntryObj.Contents = entryObj.Contents;
-                    entryObj = newEntryObj;
+                    switch (sourceContentType)
+                    {
+                        case ContentType.File:
+                            await ExecuteCopyFileContent(sourcePath, sourceContent,
+                                copySpec, sourceRepo, targetRepo, cancelToken)
+                                .ConfigureAwait(continueOnCapturedContext: false);
+                            break;
+                        case ContentType.Dir:
+                            await ExecuteCopyFilePath(sourcePath, sourceContent.Path,
+                                copySpec, sourceRepo, targetRepo, cancelToken)
+                                .ConfigureAwait(continueOnCapturedContext: false);
+                            break;
+                        case ContentType.Symlink:
+                            await ExecuteCopyFilePath(sourcePath, sourceContent.Target,
+                                copySpec, sourceRepo, targetRepo, cancelToken)
+                                .ConfigureAwait(continueOnCapturedContext: false);
+                            break;
+                        default:
+                            unsupportedContentType = true;
+                            break;
+                    } 
                 }
-                else
-                    entries[path] = entryObj;
+                if (unsupportedContentType)
+                    Logger.LogWarning($"Unsupported content type '{{{nameof(sourceContentType)}}}' in repository {{{nameof(sourceRepo)}}} at path: {{{nameof(sourcePath)}}}", sourceContent.Type, sourceRepo.ToLogString(), sourceContent.Path);
+                if (cancelToken.IsCancellationRequested)
+                    return;
+            }
+        }
+
+        private async Task ExecuteCopyFileContent(string sourcePath,
+            RepositoryContent sourceContent, PathGroupSpec copySpec,
+            RepositoryReference sourceRepo,
+            RepositoryReference targetRepo,
+            CancellationToken cancelToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task<RepositoryContentEntry> GetRepositoryContentEntry(RepositoryReference repoSpec, string path)
+        {
+            var entryKey = new RepositoryPathReference
+            {
+                RepositoryOwner = repoSpec.RepositoryOwner,
+                RepositoryName = repoSpec.RepositoryName,
+                TreeReference = repoSpec.TreeReference,
+                Path = path
+            };
+            var entryObj = await RepositoryCache.GetOrCreateAsync(
+                entryKey, CreateCachedRepositoryContentEntry
+                ).ConfigureAwait(continueOnCapturedContext: false);
+            if (entryObj.Contents is null)
+            {
+                var entryContents = await DownloadRepositoryContents(repoSpec, path)
+                    .ConfigureAwait(continueOnCapturedContext: false);
+                AddRepositoryContentsToCache(repoSpec, entryContents);
+                entryObj.Contents = entryContents;
             }
             return entryObj;
         }
 
-        private async Task GetRepositoryContentsForEntry(string path, RepositoryCacheEntry entryObj, RepositoryReferenceSpec repoSpec, Dictionary<string, RepositoryCacheEntry> entries)
+        private async Task<RepositoryContentEntry> CreateCachedRepositoryContentEntry(ICacheEntry entryOptions)
         {
-            bool entryFound;
-            var repoContentList = await GetRepositoryContent(repoSpec, path)
-                    .ConfigureAwait(continueOnCapturedContext: false);
-            foreach (var repoContentInfo in repoContentList)
-            {
-                var subPath = repoContentInfo.Path;
-                RepositoryCacheEntry subEntry;
-                lock (entries)
-                { entryFound = entries.TryGetValue(subPath, out subEntry); }
-                if (entryFound)
-                    subEntry.Leaf = repoContentInfo;
-                else
-                {
-                    subEntry = new RepositoryCacheEntry { Leaf = repoContentInfo };
-                    lock (entries)
-                    { entries[subPath] = subEntry; }
-                }
-            }
-            entryObj.Contents = repoContentList;
+            var entryKey = (RepositoryPathReference)entryOptions.Key;
+            string entryPath = entryKey.Path;
+            var entryContents = await DownloadRepositoryContents(entryKey, entryPath)
+                .ConfigureAwait(continueOnCapturedContext: false);
+            AddRepositoryContentsToCache(entryKey, entryContents);
+
+            if (RepositoryCache.TryGetValue(entryKey, out RepositoryContentEntry entryObj))
+                entryObj.Contents = entryContents;
+            else
+                entryObj = new RepositoryContentEntry { Contents = entryContents };
+            entryOptions.Size = entryObj.Leaf?.Size;
+
+            return entryObj;
         }
 
-        private Task<IReadOnlyList<RepositoryContent>> GetRepositoryContent(RepositoryReferenceSpec repoSpec, string path)
+        private void AddRepositoryContentsToCache(RepositoryReference repoSpec, IEnumerable<RepositoryContent> contentList)
+        {
+            foreach (var repoContent in contentList)
+            {
+                var subKey = new RepositoryPathReference
+                {
+                    RepositoryOwner = repoSpec.RepositoryOwner,
+                    RepositoryName = repoSpec.RepositoryName,
+                    TreeReference = repoSpec.TreeReference,
+                    Path = repoContent.Path
+                };
+                if (RepositoryCache.TryGetValue(subKey, out RepositoryContentEntry subEntry))
+                    subEntry.Leaf = repoContent;
+                else
+                    subEntry = new RepositoryContentEntry { Leaf = repoContent };
+                var subOptions = new MemoryCacheEntryOptions { Size = repoContent.Size };
+                RepositoryCache.Set(subKey, subEntry, subOptions);
+                if (repoContent.Type.TryParse(out var repoContentType) && repoContentType == ContentType.File)
+                    subEntry.Contents = new List<RepositoryContent>(capacity: 1) { repoContent };
+            }
+        }
+
+        private Task<IReadOnlyList<RepositoryContent>> DownloadRepositoryContents(RepositoryReference repoSpec, string path)
         {
             var (client, owner, name, @ref) = (
                 GitHubClient.Repository.Content,
@@ -251,6 +220,91 @@ namespace THNETII.Utils.GhMultiSync
                 else
                     return client.GetAllContentsByRef(owner, name, path, @ref);
             }
+        }
+
+        private async Task UploadRepositoryContent(
+            RepositoryReference targetRepo, string path,
+            string commitMessage, string sourceContentBase64,
+            CancellationToken cancelToken)
+        {
+            var changeTracker = GetOrCreateRepositoryChangeTracker(targetRepo);
+            await changeTracker.Lock.WaitAsync(cancelToken).ConfigureAwait(false);
+            try
+            {
+                await UploadRepositoryContent(changeTracker, path, commitMessage,
+                    sourceContentBase64, cancelToken
+                    ).ConfigureAwait(continueOnCapturedContext: false);
+            }
+            finally { changeTracker.Lock.Release(); }
+        }
+
+        private async Task UploadRepositoryContent(
+            RepositoryContentChangeTracker changeTracker, string path,
+            string commitMessage, string sourceContentBase64,
+            CancellationToken cancelToken)
+        {
+            RepositoryContentEntry targetEntry;
+            try
+            {
+                targetEntry = await GetRepositoryContentEntry(changeTracker.Reference, path)
+                    .ConfigureAwait(continueOnCapturedContext: false);
+            }
+            catch (NotFoundException) { targetEntry = null; }
+            if (cancelToken.IsCancellationRequested)
+                return;
+
+            var (client, owner, name) = (
+                GitHubClient.Repository.Content,
+                changeTracker.Reference.RepositoryOwner,
+                changeTracker.Reference.RepositoryName
+                );
+            Task<RepositoryContentChangeSet> changeSetTask;
+            if (targetEntry is null)
+            {
+                var uploadOptions = new CreateFileRequest(
+                    commitMessage,
+                    sourceContentBase64,
+                    null,
+                    convertContentToBase64: false
+                    );
+                
+                changeSetTask = client.CreateFile(
+                    owner, name, path, uploadOptions);
+            }
+            else
+            {
+                UpdateFileRequest uploadOptions = new UpdateFileRequest(
+                    commitMessage,
+                    sourceContentBase64,
+                    targetEntry.Leaf?.Sha,
+                    null,
+                    convertContentToBase64: false
+                    );
+                changeSetTask = client.UpdateFile(
+                    owner, name, path, uploadOptions);
+            }
+
+            var changeSetResult = await changeSetTask.ConfigureAwait(false);
+            changeTracker.Reference = new RepositoryReference
+            {
+                RepositoryOwner = owner,
+                RepositoryName = name,
+                TreeReference = changeSetResult.Commit.Sha
+            };
+        }
+
+        private RepositoryContentChangeTracker GetOrCreateRepositoryChangeTracker(RepositoryReference repo)
+        {
+            RepositoryContentChangeTracker changeTracker;
+            lock (RepositoryChangeTracker)
+            {
+                if (!RepositoryChangeTracker.TryGetValue(repo, out changeTracker))
+                {
+                    changeTracker = new RepositoryContentChangeTracker { Reference = repo };
+                    RepositoryChangeTracker[repo] = changeTracker;
+                }
+            }
+            return changeTracker;
         }
     }
 }

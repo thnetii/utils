@@ -12,7 +12,8 @@ using System.Diagnostics.CodeAnalysis;
     Target = nameof(THNETII) + "."
         + nameof(THNETII.Utils) + "."
         + nameof(THNETII.Utils.GhMultiSync) + "."
-        + nameof(THNETII.Utils.GhMultiSync.Models)
+        + nameof(THNETII.Utils.GhMultiSync.Models) + "."
+        + nameof(THNETII.Utils.GhMultiSync.Models.Yaml)
     )]
 
 

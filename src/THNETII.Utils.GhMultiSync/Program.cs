@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -18,6 +18,12 @@ namespace THNETII.Utils.GhMultiSync
 {
     public static class Program
     {
+        private const string GitHubConfigPath = "GitHub";
+        private static readonly string AccessTokenConfigPath =
+            ConfigurationPath.Combine(GitHubConfigPath, "AccessToken");
+        private static readonly string AccessTokenFallbackVariableConfigPath =
+            ConfigurationPath.Combine(GitHubConfigPath, "AccessTokenFallbackVariable");
+
         public static Task<int> Main(string[] args)
         {
             var commandHandler = CommandHandler.Create<IHost, CancellationToken>(RunAsync);
@@ -67,22 +73,20 @@ namespace THNETII.Utils.GhMultiSync
                 );
             services.AddScoped<IConnection>(serviceProvider =>
             {
-                const string github = "GitHub";
-
                 var arguments = serviceProvider.GetRequiredService<CommandArguments>();
                 var token = arguments.Token;
 
                 if (string.IsNullOrWhiteSpace(token))
                 {
                     var config = serviceProvider.GetRequiredService<IConfiguration>();
-                    var path = ConfigurationPath.Combine(github, "AccessToken");
+                    var path = AccessTokenConfigPath;
                     token = config[path];
                 }
 
                 if (string.IsNullOrWhiteSpace(token))
                 {
                     var config = serviceProvider.GetRequiredService<IConfiguration>();
-                    var path = ConfigurationPath.Combine(github, "AccessTokenFallbackVariable");
+                    var path = AccessTokenFallbackVariableConfigPath;
                     var variable = config[path];
 
                     if (!string.IsNullOrWhiteSpace(variable))
@@ -99,7 +103,13 @@ namespace THNETII.Utils.GhMultiSync
                 };
             });
 
+            services.AddMemoryCache(options =>
+            {
+                options.SizeLimit = 200L * 1024L * 1024L; // 200 MiB
+            });
+
             services.AddSingleton<IPostConfigureOptions<InvocationLifetimeOptions>, InvocationLifetimeOptionsPostConfigure>();
+            services.AddSingleton<IPostConfigureOptions<MemoryCacheOptions>, MemoryCacheOptionsPostConfigure>();
         }
 
         [SuppressMessage("Performance", "CA1812: Avoid uninstantiated internal classes", Justification = nameof(Microsoft.Extensions.DependencyInjection))]
@@ -114,6 +124,24 @@ namespace THNETII.Utils.GhMultiSync
 
             public void PostConfigure(string name, InvocationLifetimeOptions options)
                 => configuration.Bind("Lifetime", options);
+        }
+
+        private class MemoryCacheOptionsPostConfigure : IPostConfigureOptions<MemoryCacheOptions>
+        {
+            private static readonly string ConfigPath = ConfigurationPath.Combine(
+                nameof(Microsoft.Extensions.Caching),
+                nameof(Microsoft.Extensions.Caching.Memory)
+                );
+
+            private readonly IConfiguration configuration;
+
+            public MemoryCacheOptionsPostConfigure(IConfiguration configuration)
+            {
+                this.configuration = configuration;
+            }
+
+            public void PostConfigure(string name, MemoryCacheOptions options)
+                => configuration.Bind(ConfigPath, options);
         }
     }
 }

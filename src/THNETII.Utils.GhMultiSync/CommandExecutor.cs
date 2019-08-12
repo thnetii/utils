@@ -21,8 +21,6 @@ namespace THNETII.Utils.GhMultiSync
 {
     public class CommandExecutor
     {
-        private static readonly Uri rootUri = new Uri(@"cache://github.com/");
-
         public CommandExecutor(
             CommandArguments arguments,
             GitHubClient gitHubClient,
@@ -37,6 +35,7 @@ namespace THNETII.Utils.GhMultiSync
 
             Deserializer = new DeserializerBuilder()
                 .IgnoreUnmatchedProperties()
+                .WithTypeConverter(new ConditionSpecTypeConverter())
                 .Build();
 
             RepositoryCache = new MemoryCache(memoryCacheOptions);
@@ -119,7 +118,7 @@ namespace THNETII.Utils.GhMultiSync
                         default:
                             unsupportedContentType = true;
                             break;
-                    } 
+                    }
                 }
                 if (unsupportedContentType)
                     Logger.LogWarning($"Unsupported content type '{{{nameof(sourceContentType)}}}' in repository {{{nameof(sourceRepo)}}} at path: {{{nameof(sourcePath)}}}", sourceContent.Type, sourceRepo.ToLogString(), sourceContent.Path);
@@ -135,6 +134,40 @@ namespace THNETII.Utils.GhMultiSync
             CancellationToken cancelToken)
         {
             throw new NotImplementedException();
+        }
+
+        private async Task<string> GetTargetPath(RepositoryContent sourceContent,
+            PathGroupSpec pathSpec, RepositoryReference targetRepo)
+        {
+            var targetPath = pathSpec.DestinationPath;
+            RepositoryContentEntry targetEntry;
+            try
+            {
+                targetEntry = await GetRepositoryContentEntry(targetRepo, targetPath)
+                    .ConfigureAwait(continueOnCapturedContext: false);
+            }
+            catch (NotFoundException) { targetEntry = null; }
+
+            switch (targetEntry)
+            {
+                case null when pathSpec.SourcePaths.Count > 1:
+                case RepositoryContentEntry _
+                    when !(targetEntry.Leaf is null) &&
+                        targetEntry.Leaf.Type.TryParse(out var targetType) &&
+                        targetType == ContentType.Dir:
+                case RepositoryContentEntry _ when targetEntry.Leaf is null:
+                    return pathSpec.DestinationPath.TrimEnd('/').TrimEnd() +
+                        "/" + sourceContent.Name;
+
+                case null:
+                    return targetPath;
+
+                case RepositoryContentEntry _
+                    when !(targetEntry.Leaf is null):
+                    return targetEntry.Leaf.Path;
+            }
+
+            return null;
         }
 
         private async Task<RepositoryContentEntry> GetRepositoryContentEntry(RepositoryReference repoSpec, string path)
@@ -267,7 +300,7 @@ namespace THNETII.Utils.GhMultiSync
                     null,
                     convertContentToBase64: false
                     );
-                
+
                 changeSetTask = client.CreateFile(
                     owner, name, path, uploadOptions);
             }

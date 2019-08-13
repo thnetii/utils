@@ -2,11 +2,13 @@
 
 namespace THNETII.Utils.GhMultiSync.Models.Yaml
 {
-    public abstract class ConditionSpec
+    public class ConditionBoolValueSpec : ConditionSpec
     {
-        public abstract bool Evaluate(string sourcePath,
+        public bool Value { get; set; } = true;
+
+        public override bool Evaluate(string sourcePath,
             RepositoryReference sourceRepo, RepositoryContent sourceContent,
             string targetPath, RepositoryReference targetRepo,
-            RepositoryContent targetContent);
+            RepositoryContent targetContent) => Value;
     }
 }

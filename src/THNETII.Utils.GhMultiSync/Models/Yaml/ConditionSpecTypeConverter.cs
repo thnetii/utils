@@ -9,14 +9,24 @@ namespace THNETII.Utils.GhMultiSync.Models.Yaml
 {
     public class ConditionSpecTypeConverter : IYamlTypeConverter
     {
-        private readonly IDeserializer deserializer;
+        private readonly Lazy<IDeserializer> deserializer;
+        private readonly Func<IDeserializer> deserializerAccessor;
 
-        public ConditionSpecTypeConverter() : base()
+        private IDeserializer Deserializer => deserializer.Value;
+
+        public ConditionSpecTypeConverter(Func<IDeserializer> deserializerAccessor) : base()
         {
-            deserializer = new DeserializerBuilder()
-                .IgnoreUnmatchedProperties()
-                .WithTypeConverter(this)
-                .Build();
+            this.deserializerAccessor = deserializerAccessor;
+            deserializer = new Lazy<IDeserializer>(GetDeserializer);
+        }
+
+        private IDeserializer GetDeserializer()
+        {
+            return deserializerAccessor?.Invoke() ??
+                new DeserializerBuilder()
+                    .IgnoreUnmatchedProperties()
+                    .WithTypeConverter(this)
+                    .Build();
         }
 
         public bool Accepts(Type type) => type == typeof(ConditionSpec);
@@ -36,7 +46,7 @@ namespace THNETII.Utils.GhMultiSync.Models.Yaml
                         throw new InvalidOperationException($"Unexpected end of parser encountered! {parser.Current}");
                     return ReadInnerYaml(parser, scalar.Value, hasValue: false);
                 case SequenceStart _:
-                    var conditions = (List<ConditionSpec>)deserializer.Deserialize(parser, typeof(List<ConditionSpec>));
+                    var conditions = (List<ConditionSpec>)Deserializer.Deserialize(parser, typeof(List<ConditionSpec>));
                     return new ConditionAndSpec { Conditions = conditions };
                 case MappingStart _:
                     conditions = new List<ConditionSpec>();
@@ -74,12 +84,12 @@ namespace THNETII.Utils.GhMultiSync.Models.Yaml
                     switch (parser.Current)
                     {
                         case Scalar scalar:
-                            return new ConditionNotSpec { Condtion = ReadInnerYaml(parser, scalar.Value, hasValue: false) };
+                            return new ConditionNotSpec { Condition = ReadInnerYaml(parser, scalar.Value, hasValue: false) };
                         case SequenceStart _:
-                            var conditions = (List<ConditionSpec>)deserializer.Deserialize(parser, typeof(List<ConditionSpec>));
-                            return new ConditionNotSpec { Condtion = new ConditionAndSpec { Conditions = conditions } };
+                            var conditions = (List<ConditionSpec>)Deserializer.Deserialize(parser, typeof(List<ConditionSpec>));
+                            return new ConditionNotSpec { Condition = new ConditionAndSpec { Conditions = conditions } };
                         case MappingStart _:
-                            return deserializer.Deserialize<ConditionNotSpec>(parser);
+                            return Deserializer.Deserialize<ConditionNotSpec>(parser);
                     }
                     break;
 
@@ -87,11 +97,7 @@ namespace THNETII.Utils.GhMultiSync.Models.Yaml
                     if (hasValue)
                         parser.SkipThisAndNestedEvents();
                     return new ConditionDestinationExistsSpec();
-                case string _ when "sourceExists".Equals(name, StringComparison.OrdinalIgnoreCase):
-                    if (hasValue)
-                        parser.SkipThisAndNestedEvents();
-                    return new ConditionSourceExistsSpec();
-
+                
                 default:
                     throw new InvalidOperationException($"Unable to convert condition spec with name: {name}");
             }
@@ -102,39 +108,6 @@ namespace THNETII.Utils.GhMultiSync.Models.Yaml
         public void WriteYaml(IEmitter emitter, object value, Type type)
         {
             throw new NotImplementedException();
-        }
-    }
-
-    internal class ConditionNotSpec : ConditionSpec
-    {
-        public ConditionSpec Condtion { get; set; }
-    }
-
-    internal class ConditionSourceExistsSpec : ConditionSpec
-    {
-    }
-
-    internal class ConditionDestinationExistsSpec : ConditionSpec
-    {
-    }
-
-    public class ConditionAndSpec : ConditionSpec
-    {
-        public List<ConditionSpec> Conditions { get; set; }
-    }
-
-    public class ConditionBoolValueSpec : ConditionSpec
-    {
-        public bool Value { get; set; }
-    }
-
-    internal static class YamlParserExtensions
-    {
-        public static bool TryAllow<T>(this IParser parser, out T result)
-            where T : ParsingEvent
-        {
-            result = parser.Allow<T>();
-            return result is T;
         }
     }
 }

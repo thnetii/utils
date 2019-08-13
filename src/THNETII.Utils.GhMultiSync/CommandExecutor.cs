@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -34,9 +33,8 @@ namespace THNETII.Utils.GhMultiSync
             Logger = logger ?? NullLogger<CommandExecutor>.Instance;
 
             Deserializer = new DeserializerBuilder()
-                .IgnoreUnmatchedProperties()
-                .WithTypeConverter(new ConditionSpecTypeConverter())
-                .Build();
+                .WithTypeConverter(new ConditionSpecTypeConverter(() => Deserializer))
+                .IgnoreUnmatchedProperties().Build();
 
             RepositoryCache = new MemoryCache(memoryCacheOptions);
         }
@@ -133,7 +131,30 @@ namespace THNETII.Utils.GhMultiSync
             RepositoryReference targetRepo,
             CancellationToken cancelToken)
         {
-            throw new NotImplementedException();
+            var targetPath = await GetTargetPath(sourceContent, copySpec, targetRepo)
+                .ConfigureAwait(continueOnCapturedContext: false);
+
+            if (cancelToken.IsCancellationRequested)
+                return;
+
+            RepositoryContentEntry targetEntry;
+            try
+            {
+                targetEntry = await GetRepositoryContentEntry(targetRepo, targetPath)
+                    .ConfigureAwait(false);
+            }
+            catch (NotFoundException) { targetEntry = null; }
+            var targetContent = targetEntry?.Leaf;
+
+            bool copyCond = copySpec.Condition?.Evaluate(
+                sourcePath, sourceRepo, sourceContent,
+                targetPath, targetRepo, targetContent
+                ) ?? true;
+
+            if (!copyCond)
+                Logger.LogDebug($"Not copying path '{{{nameof(sourcePath)}}}' from {{{nameof(sourceRepo)}}} to '{{{nameof(targetPath)}}}' in {{{nameof(targetRepo)}}}. Condition of type {{conditionType}} evaluated {{conditionValue}}.", sourcePath, sourceRepo.ToLogString(), targetPath, targetRepo.ToLogString(), copySpec.Condition?.GetType(), copyCond);
+
+
         }
 
         private async Task<string> GetTargetPath(RepositoryContent sourceContent,

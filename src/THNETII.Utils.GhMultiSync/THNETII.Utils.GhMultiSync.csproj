@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
-  
+
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <LangVersion>7.3</LangVersion>
@@ -17,5 +17,5 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="3.0.0" />
     <PackageReference Include="System.CommandLine.Hosting" Version="0.3.0-alpha.19405.1" />
   </ItemGroup>
-  
+
 </Project>

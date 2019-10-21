@@ -13,15 +13,5 @@ namespace THNETII.Utils.GhMultiSync.Models
 
         [YamlMember(Alias = "treeRef")]
         public string TreeReference { get; set; }
-
-        internal string ToLogString()
-        {
-            var (owner, name, treeRef) = (RepositoryOwner, RepositoryName, TreeReference);
-            var builder = new StringBuilder();
-            builder.Append(owner).Append('/').Append(name);
-            if (!string.IsNullOrEmpty(treeRef))
-                builder.Append('@').Append(treeRef);
-            return builder.ToString();
-        }
     }
 }

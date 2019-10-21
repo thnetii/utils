@@ -1,3 +1,0 @@
-[submodule "command-line-api"]
-	path = command-line-api
-	url = https://github.com/dotnet/command-line-api.git

@@ -11,7 +11,6 @@ namespace THNETII.Utils.GhMultiSync.Models.Yaml
         [YamlMember(Alias = "destinationPath")]
         public string DestinationPath { get; set; }
 
-        [YamlMember(Alias = "condition")]
         public ConditionSpec Condition { get; set; }
     }
 }

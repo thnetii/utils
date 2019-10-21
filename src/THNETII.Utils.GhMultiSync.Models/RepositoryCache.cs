@@ -1,5 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+
 using Octokit;
 
 namespace THNETII.Utils.GhMultiSync.Models

@@ -127,6 +127,7 @@ namespace THNETII.Utils.GhMultiSync
                 => configuration.Bind("Lifetime", options);
         }
 
+        [SuppressMessage("Performance", "CA1812: Avoid uninstantiated internal classes", Justification = nameof(Microsoft.Extensions.DependencyInjection))]
         private class MemoryCacheOptionsPostConfigure : IPostConfigureOptions<MemoryCacheOptions>
         {
             private static readonly string ConfigPath = ConfigurationPath.Combine(

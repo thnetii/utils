@@ -4,6 +4,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <LangVersion>8</LangVersion>
+    <Nullable>enable</Nullable>
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <UserSecretsId>55fbf4f0-faac-44b8-893c-2541965d3b32</UserSecretsId>
   </PropertyGroup>

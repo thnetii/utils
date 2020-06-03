@@ -1,4 +1,4 @@
-﻿using Octokit;
+using Octokit;
 
 namespace THNETII.Utils.GhMultiSync.Models.Yaml
 {

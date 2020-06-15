@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Invocation;
@@ -6,9 +5,11 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 
+using THNETII.CommandLine.Hosting;
+
 namespace THNETII.Utils.GhMultiSync
 {
-    public class CommandDefinition
+    public class CommandDefinition : ICommandDefinition
     {
         public CommandDefinition(ICommandHandler commandHandler)
         {
@@ -26,6 +27,8 @@ namespace THNETII.Utils.GhMultiSync
         }
 
         public RootCommand RootCommand { get; }
+        Command ICommandDefinition.RootCommand => RootCommand;
+
         public Argument<string[]> FileArgument { get; }
         public Option TokenOption { get; }
 

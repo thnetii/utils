@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.CommandLine;
+using System.CommandLine.Parsing;
 using System.IO;
 using System.Linq;
 
@@ -32,7 +32,7 @@ namespace THNETII.Utils.GhMultiSync
             if (FileReaders.Count == 0)
                 FileReaders.Add(("-", GetConsoleInTextReader));
 
-            TextReader GetConsoleInTextReader() => Console.In;
+            static TextReader GetConsoleInTextReader() => Console.In;
         }
 
         public CommandDefinition Definition { get; }

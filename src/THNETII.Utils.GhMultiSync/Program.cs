@@ -2,6 +2,7 @@ using System;
 using System.CommandLine.Builder;
 using System.CommandLine.Hosting;
 using System.CommandLine.Invocation;
+using System.CommandLine.Parsing;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
@@ -15,6 +16,8 @@ using Microsoft.Extensions.Options;
 
 using Octokit;
 
+using THNETII.CommandLine.Hosting;
+
 namespace THNETII.Utils.GhMultiSync
 {
     public static class Program
@@ -27,31 +30,19 @@ namespace THNETII.Utils.GhMultiSync
 
         public static Task<int> Main(string[] args)
         {
-            var commandHandler = CommandHandler.Create<IHost, CancellationToken>(RunAsync);
-            var commandDefinition = new CommandDefinition(commandHandler);
-
-            var parser = new CommandLineBuilder(commandDefinition.RootCommand)
-                .UseDefaults()
-                .UseHost(Host.CreateDefaultBuilder, host =>
-                {
-                    host.ConfigureServices(services => services.AddSingleton(commandDefinition));
-                    ConfigureHost(host);
-                })
-                .Build();
-
-            return parser.InvokeAsync(args);
-
-            async Task RunAsync(IHost host, CancellationToken cancelToken)
+            var handler = CommandHandler.Create(
+            async (IHost host, CancellationToken cancelToken) =>
             {
                 var serviceProvider = host.Services;
-                using (var scope = serviceProvider.CreateScope())
-                {
-                    var scopeProvider = scope.ServiceProvider;
-                    var executor = scopeProvider.GetRequiredService<CommandExecutor>();
+                using var scope = serviceProvider.CreateScope();
+                var scopeProvider = scope.ServiceProvider;
+                var executor = scopeProvider.GetRequiredService<CommandExecutor>();
 
-                    await executor.ExecuteAsync(cancelToken).ConfigureAwait(false);
-                }
-            }
+                await executor.ExecuteAsync(cancelToken).ConfigureAwait(false);
+            });
+            var definition = new CommandDefinition(handler);
+            return DefaultCommandLine
+                .InvokeAsync(definition, args, ConfigureHost);
         }
 
         private static void ConfigureHost(IHostBuilder host)
@@ -108,41 +99,15 @@ namespace THNETII.Utils.GhMultiSync
             {
                 options.SizeLimit = 200L * 1024L * 1024L; // 200 MiB
             });
-
-            services.AddSingleton<IPostConfigureOptions<InvocationLifetimeOptions>, InvocationLifetimeOptionsPostConfigure>();
-            services.AddSingleton<IPostConfigureOptions<MemoryCacheOptions>, MemoryCacheOptionsPostConfigure>();
-        }
-
-        [SuppressMessage("Performance", "CA1812: Avoid uninstantiated internal classes", Justification = nameof(Microsoft.Extensions.DependencyInjection))]
-        private class InvocationLifetimeOptionsPostConfigure : IPostConfigureOptions<InvocationLifetimeOptions>
-        {
-            private readonly IConfiguration configuration;
-
-            public InvocationLifetimeOptionsPostConfigure(IConfiguration configuration)
-            {
-                this.configuration = configuration;
-            }
-
-            public void PostConfigure(string name, InvocationLifetimeOptions options)
-                => configuration.Bind("Lifetime", options);
-        }
-
-        private class MemoryCacheOptionsPostConfigure : IPostConfigureOptions<MemoryCacheOptions>
-        {
-            private static readonly string ConfigPath = ConfigurationPath.Combine(
-                nameof(Microsoft.Extensions.Caching),
-                nameof(Microsoft.Extensions.Caching.Memory)
-                );
-
-            private readonly IConfiguration configuration;
-
-            public MemoryCacheOptionsPostConfigure(IConfiguration configuration)
-            {
-                this.configuration = configuration;
-            }
-
-            public void PostConfigure(string name, MemoryCacheOptions options)
-                => configuration.Bind(ConfigPath, options);
+            services.AddOptions<MemoryCacheOptions>()
+                .Configure<IConfiguration>((options, config) =>
+                {
+                    string configPath = ConfigurationPath.Combine(
+                        nameof(Microsoft.Extensions.Caching),
+                        nameof(Microsoft.Extensions.Caching.Memory)
+                        );
+                    config.Bind(configPath, options);
+                });
         }
     }
 }

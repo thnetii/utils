@@ -2,25 +2,32 @@
 <Project>
   <Import Condition="Exists('$(MSBuildThisFileDirectory)\Directory.Meta.props')" Project="$(MSBuildThisFileDirectory)\Directory.Meta.props" />
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
-    <DebugType>full</DebugType>
+    <DebugType>portable</DebugType>
   </PropertyGroup>
   <PropertyGroup>
     <TargetFramework Condition="'$(BuildDefaultTargetFramework)'!=''">netstandard2.0</TargetFramework>
   </PropertyGroup>
   <PropertyGroup>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
-    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
   <PropertyGroup Label="BasePath">
     <BaseOutputPath>$(MSBuildThisFileDirectory)bin\</BaseOutputPath>
     <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+    <PublishDir>$(MSBuildThisFileDirectory)publish\$(MSBuildProjectName)\</PublishDir>
   </PropertyGroup>
   <PropertyGroup>
     <Features>IOperation</Features>
     <CodeAnalysisRuleSet>$(MSBuildThisFileDirectory)AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
+  <Import Label="Version"
+          Condition="
+          '$(VersionPrefix)'=='' and
+          Exists('$(MSBuildThisFileDirectory)Directory.Version.props')
+          "
+          Project="$(MSBuildThisFileDirectory)Directory.Version.props"/>
   <PropertyGroup Label="Version" Condition="'$(VersionPrefix)'!=''">
     <FileVersion>$(VersionPrefix)</FileVersion>
     <AssemblyVersion>$(FileVersion)</AssemblyVersion>
@@ -33,11 +40,11 @@
     <AssemblyVersion Condition="'$(FileVersion)'!=''">$(FileVersion).$(BuildId)</AssemblyVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.6" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="3.0.0" PrivateAssets="All" />
     <PackageReference Include="Microsoft.DotNet.Analyzers.Compatibility" Version="0.2.12-alpha" PrivateAssets="All" />
   </ItemGroup>
   <ItemGroup Label="SourceLink">
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta2-19367-01">
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0">
       <PrivateAssets>All</PrivateAssets>
     </PackageReference>
   </ItemGroup>

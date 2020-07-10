@@ -1,0 +1,3 @@
+[submodule "dotnet-common"]
+	path = dotnet-common
+	url = https://github.com/thnetii/dotnet-common.git

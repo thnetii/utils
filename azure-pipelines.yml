@@ -16,6 +16,6 @@ resources:
 jobs:
 - template: templates/dotnetcore/azure-pipelines.yml@templates
   parameters:
-    presteps:
+    checkout:
     - checkout:   self
       submodules: true

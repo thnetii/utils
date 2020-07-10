@@ -13,28 +13,6 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
-  <PropertyGroup Label="Nullable Reference Types">
-    <LangVersion>8</LangVersion>
-    <Nullable Condition="
-              ('$(TargetFrameworkIdentifier)' == '.NETCoreApp'  AND '$(_TargetFrameworkVersionWithoutV)' &gt;= '3.0') OR
-              ('$(TargetFrameworkIdentifier)' == '.NETStandard' AND '$(_TargetFrameworkVersionWithoutV)' &gt;= '2.1')
-              ">enable</Nullable>
-    <Nullable Condition="!(
-              ('$(TargetFrameworkIdentifier)' == '.NETCoreApp'  AND '$(_TargetFrameworkVersionWithoutV)' &gt;= '3.0') OR
-              ('$(TargetFrameworkIdentifier)' == '.NETStandard' AND '$(_TargetFrameworkVersionWithoutV)' &gt;= '2.1')
-              )">annotations</Nullable>
-  </PropertyGroup>
-  <ItemGroup Label="Nullable helper library for Pre-.NET Standard 2.1"
-             Condition="
-             ('$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND '$(_TargetFrameworkVersionWithoutV)' &lt; '3.0') OR
-             ('$(TargetFrameworkIdentifier)' == '.NETStandard' AND '$(_TargetFrameworkVersionWithoutV)' &lt; '2.1') OR
-             ('$(TargetFrameworkIdentifier)' == '.NETFramework')"
-             >
-    <PackageReference Include="Nullable" Version="1.2.1">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
-  </ItemGroup>
   <PropertyGroup Label="BasePath">
     <BaseOutputPath>$(MSBuildThisFileDirectory)bin\</BaseOutputPath>
     <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>

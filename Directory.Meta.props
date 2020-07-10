@@ -2,7 +2,8 @@
 <Project>
   <PropertyGroup Label="Common Package Metadata">
     <Authors>Fredrik Høisæther Rasch</Authors>
-    <Product></Product>
+    <Product>
+    </Product>
     <Company>TH-NETII Rasch Solutions</Company>
     <Copyright>Written by Fredrik Høisæther Rasch, $([System.DateTime]::Now.Year)</Copyright>
     <PackageProjectUrl>https://github.com/thnetii/utils</PackageProjectUrl>
@@ -16,7 +17,8 @@
   </PropertyGroup>
   <ItemGroup Label="License">
     <None Include="$(MSBuildThisFileDirectory)LICENSE" Pack="true">
-      <PackagePath></PackagePath>
+      <PackagePath>
+      </PackagePath>
     </None>
   </ItemGroup>
 </Project>

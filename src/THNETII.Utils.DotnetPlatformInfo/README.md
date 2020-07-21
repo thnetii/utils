@@ -5,9 +5,9 @@
 | Deployment | Latest Status |
 | - | - |
 | **Build Status** | [![Build Status](https://dev.azure.com/thnetii/ci-cd/_apis/build/status/thnetii.utils?branchName=rel/dotnet-platforminfo/latest)](https://dev.azure.com/thnetii/ci-cd/_build/latest?definitionId=83&branchName=rel/dotnet-platforminfo/latest) |
-| **Nightlies** | [![THNETII.Utils.DotnetPlatformInfo package in nightly feed in Azure Artifacts](https://feeds.dev.azure.com/thnetii/2c1e277e-4a44-4255-bb5a-0e12a2e181eb/_apis/public/Packaging/Feeds/3f3a46b4-4d40-4031-9137-77e7901c7626/Packages/5e034465-50b3-4a60-b899-04b508156364/Badge)](https://dev.azure.com/thnetii/ci-cd/_packaging?_a=package&feed=3f3a46b4-4d40-4031-9137-77e7901c7626&package=5e034465-50b3-4a60-b899-04b508156364&preferRelease=true) |
-| **Azure Artifacts** | [![THNETII.Utils.DotnetPlatformInfo package in public feed in Azure Artifacts](https://feeds.dev.azure.com/thnetii/f1165ef2-8f9b-46e1-87a8-be4ce26ce217/_apis/public/Packaging/Feeds/4046ec89-3396-4ce5-914e-40429cd037c2/Packages/104d7c22-ed49-4502-baa2-99087e7f6ee9/Badge)](https://dev.azure.com/thnetii/artifacts/_packaging?_a=package&feed=4046ec89-3396-4ce5-914e-40429cd037c2&package=104d7c22-ed49-4502-baa2-99087e7f6ee9&preferRelease=true) |
-| **NuGet.org** | *N/A* |
+| **Nightlies** | [![THNETII.Utils.DotnetPlatformInfo package in nightly feed in Azure Artifacts](https://feeds.dev.azure.com/thnetii/ci-cd/_apis/public/packaging/Feeds/nightly/Packages/5e034465-50b3-4a60-b899-04b508156364/badge)](https://dev.azure.com/thnetii/ci-cd/_packaging?_a=package&feed=nightly&package=THNETII.Utils.DotnetPlatformInfo&protocolType=NuGet&preferRelease=true) |
+| **Azure Artifacts** | [![THNETII.Utils.DotnetPlatformInfo package in public feed in Azure Artifacts](https://feeds.dev.azure.com/thnetii/artifacts/_apis/public/packaging/Feeds/public/Packages/104d7c22-ed49-4502-baa2-99087e7f6ee9/badge)](https://dev.azure.com/thnetii/artifacts/_packaging?_a=package&feed=public&package=THNETII.Utils.DotnetPlatformInfo&protocolType=NuGet&preferRelease=true) |
+| **NuGet Gallery** | [![THNETII.Utils.DotnetPlatformInfo package on nuget.org](https://img.shields.io/nuget/vpre/THNETII.Utils.DotnetPlatformInfo?label=nuget.org)](https://www.nuget.org/packages/THNETII.Utils.DotnetPlatformInfo) |
 
 
 ## Installation
@@ -16,21 +16,39 @@ The platform information utility is published as a .NET Core Tool.
 
 ### Nuget
 
-*Work in progress*
+This tool is listed on the [NuGet Gallery](https://www.nuget.org/packages) with the package id [`THNETII.Utils.DotnetPlatformInfo`](https://www.nuget.org/packages/THNETII.Utils.DotnetPlatformInfo)
+
+You can install the tool from nuget using the following command
+
+``` sh
+dotnet tool install --global THNETII.Utils.DotnetPlatformInfo
+```
 
 ### Azure Artifacts
 
-*The tool will be published to the TH-NETII artifacts feed and can be downloaded from there, once the package is published.*
+As an alternative to the NuGet Gallery, the tool can also be obtained from the [TH-NETII Public Artifacts feed](https://dev.azure.com/thnetii/artifacts/_packaging?_a=feed&feed=public) on Azure DevOps.
 
-### Form source
+``` sh
+dotnet tool install --global --add-source "https://pkgs.dev.azure.com/thnetii/artifacts/_packaging/public/nuget/v3/index.json" THNETII.Utils.DotnetPlatformInfo
+```
 
-To build and install the tool globally from source, run the following command in PowerShell:
+### Nightlies
 
-``` ps1
-$UtilsDirectory = Join-Path ([System.IO.Path]::GetTempPath()) "thnetii-utils"
-& git clone --depth 1 --branch rel/dotnet-platforminfo/latest "https://github.com/thnetii/utils.git" -- $UtilsDirectory
-& dotnet pack -c Release "`"$(Join-Path $UtilsDirectory "src/THNETII.Utils.DotnetPlatformInfo")`""
-& dotnet tool install --global --add-source "`"$(Join-Path $UtilsDirectory "bin/Release")`"" THNETII.Utils.DotnetPlatformInfo
+Whenever commits are pushed to the `master` or a release branch (`rel/*`) the CI/CD pipeline for this repository will publish the tool in the [nightly feed](https://dev.azure.com/thnetii/ci-cd/_packaging?_a=feed&feed=nightly).
+
+The latest artifact can be installed by running the following command
+
+``` sh
+dotnet tool install --global --add-source "https://pkgs.dev.azure.com/thnetii/ci-cd/_packaging/nightly/nuget/v3/index.json" THNETII.Utils.DotnetPlatformInfo
+```
+
+### From source
+
+To build and install the tool globally from source, run the following command at the root of the repository:
+
+``` sh
+dotnet pack -c Release "./src/THNETII.Utils.DotnetPlatformInfo"
+dotnet tool install --global --add-source "./bin/Release" THNETII.Utils.DotnetPlatformInfo
 ```
 
 ## Usage

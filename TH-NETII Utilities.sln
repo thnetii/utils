@@ -1,3 +1,4 @@
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29021.104
@@ -31,6 +32,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{650CE996-EAA8-4A9C-AB37-AF85B0295D60}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "THNETII.CommandLine.Hosting", "dotnet-common\src\THNETII.CommandLine.Hosting\THNETII.CommandLine.Hosting.csproj", "{55562359-7F60-453C-AD4E-FA374563824E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "THNETII.Utils.DotnetPlatformInfo", "src\THNETII.Utils.DotnetPlatformInfo\THNETII.Utils.DotnetPlatformInfo.csproj", "{A673DA89-2F0F-4214-ACA3-799E461B8D66}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -66,6 +69,18 @@ Global
 		{55562359-7F60-453C-AD4E-FA374563824E}.Release|x64.Build.0 = Release|Any CPU
 		{55562359-7F60-453C-AD4E-FA374563824E}.Release|x86.ActiveCfg = Release|Any CPU
 		{55562359-7F60-453C-AD4E-FA374563824E}.Release|x86.Build.0 = Release|Any CPU
+		{A673DA89-2F0F-4214-ACA3-799E461B8D66}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A673DA89-2F0F-4214-ACA3-799E461B8D66}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A673DA89-2F0F-4214-ACA3-799E461B8D66}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A673DA89-2F0F-4214-ACA3-799E461B8D66}.Debug|x64.Build.0 = Debug|Any CPU
+		{A673DA89-2F0F-4214-ACA3-799E461B8D66}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A673DA89-2F0F-4214-ACA3-799E461B8D66}.Debug|x86.Build.0 = Debug|Any CPU
+		{A673DA89-2F0F-4214-ACA3-799E461B8D66}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A673DA89-2F0F-4214-ACA3-799E461B8D66}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A673DA89-2F0F-4214-ACA3-799E461B8D66}.Release|x64.ActiveCfg = Release|Any CPU
+		{A673DA89-2F0F-4214-ACA3-799E461B8D66}.Release|x64.Build.0 = Release|Any CPU
+		{A673DA89-2F0F-4214-ACA3-799E461B8D66}.Release|x86.ActiveCfg = Release|Any CPU
+		{A673DA89-2F0F-4214-ACA3-799E461B8D66}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -74,6 +89,7 @@ Global
 		{3B7BE00C-DB30-4403-919C-1E6DD060F8D2} = {EAE54137-0792-4127-A724-158AF420183A}
 		{650CE996-EAA8-4A9C-AB37-AF85B0295D60} = {A5038D95-2966-4BB0-94F4-47E21D51F73A}
 		{55562359-7F60-453C-AD4E-FA374563824E} = {650CE996-EAA8-4A9C-AB37-AF85B0295D60}
+		{A673DA89-2F0F-4214-ACA3-799E461B8D66} = {EAE54137-0792-4127-A724-158AF420183A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {99D559D3-E3D7-48A6-9DC6-789D741FA813}
